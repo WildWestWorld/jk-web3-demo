@@ -7,8 +7,10 @@ import { VantResolver } from "@vant/auto-import-resolver";
 export default defineConfig({
   plugins: [
     vue(),
+
     Components({
       resolvers: [VantResolver()],
     }),
+    // new NodePolyfillPlugin()
   ],
 });
