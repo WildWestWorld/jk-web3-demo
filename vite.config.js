@@ -9,6 +9,7 @@ import { resolve } from "path";
 //重要！修复:import Tx from "ethereumjs-tx" 后 process undefined  Buffer undefined
 //npm add node-stdlib-browser
 // npm add -D vite-plugin-node-stdlib-browser
+
 import nodePolyfills from "vite-plugin-node-stdlib-browser";
 
 // https://vitejs.dev/config/

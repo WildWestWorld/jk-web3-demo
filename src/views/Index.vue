@@ -20,6 +20,7 @@ import Web3 from "web3";
 // npm add -D vite-plugin-node-stdlib-browser
 //   vite.config  配置nodePolyfills(),
 import Tx from "ethereumjs-tx";
+import { collapseItemProps } from "vant";
 
 const showText = ref("Hello Web3！");
 // Web3.givenProvider 默认是没有的
@@ -84,7 +85,30 @@ const send = async () => {
   //去除前面的私钥前面的0x
   let privateKeyFormat = privateKey.value.slice(2);
   privateKeyFormat = Buffer(privateKeyFormat, "hex");
-  console.error(privateKeyFormat);
+  //gas估算
+  const gas = await web3Ins.eth.estimateGas(rawTx);
+  rawTx.gas = gas;
+
+  //ethereumjs-tx" 实现私钥加密
+  const tx = new Tx(rawTx);
+  //传入私钥
+  tx.sign(privateKeyFormat);
+  //生成 serializedTx
+  //加上0x
+  const serializedTx = `0x${tx.serialize().toString("hex")}`;
+  console.warn(serializedTx);
+  //3.开始转账
+  const trans = web3Ins.eth.sendSignedTransaction(serializedTx);
+  //监听 发生交易事件
+  //txid=发送的id 也就是交易的id值
+  trans.on("transactionHash", (txid) => {
+    console.log("交易ID：", txid);
+    console.log(`https://goerli.etherscan.io/tx/${txid}`);
+  });
+  //监听节点确认事件
+  trans.on("receipt", (res) => {
+    console.log("节点确认", res);
+  });
 };
 </script>
 

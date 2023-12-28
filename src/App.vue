@@ -6,4 +6,4 @@
 import Index from './views/Index.vue';
 </script>
 
-<style></style>
+<style ></style>
