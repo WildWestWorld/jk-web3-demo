@@ -105,10 +105,15 @@ const send = async () => {
     console.log("交易ID：", txid);
     console.log(`https://goerli.etherscan.io/tx/${txid}`);
   });
-  //监听节点确认事件
+  //监听节点确认事件 只要有节点确认就会触发
   trans.on("receipt", (res) => {
-    console.log("节点确认", res);
+    console.log("第1节点确认", res);
   });
+  // 每个节点去人都会触发
+  trans.on('confirmation',(res)=>{
+    console.log("第n个节点确认",res)
+  })
+
 };
 </script>
 

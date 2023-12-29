@@ -1,9 +1,9 @@
 <template>
-  <Index></Index>
+  <RouterView></RouterView>
 </template>
 
 <script setup>
-import Index from './views/Index.vue';
+import Web3Api from "./views/Web3Api.vue";
 </script>
 
-<style ></style>
+<style></style>
