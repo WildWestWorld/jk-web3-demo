@@ -18,6 +18,7 @@ import { generateMnemonic, mnemonicToSeed } from "bip39";
 import ethwallet, { hdkey } from "ethereumjs-wallet";
 import { onMounted } from "vue";
 import Web3 from "web3";
+import { Buffer } from "buffer";
 
 onMounted(() => {
   genMnemonic();
@@ -67,16 +68,30 @@ const genMnemonic = async () => {
     privateKeyFormat,
     "111111"
   );
-  console.warn(keyStore);
 
-  //2.wallet对象 + 密码 获取keysotre
-  // const walletKeyStore = await wallet.toV3("111111");
-  // console.warn(walletKeyStore);
+  console.warn(keyStore);
 
   //通过keyStore获取私钥
   const res = await web3Ins.eth.accounts.decrypt(keyStore, "111111");
   console.log(res);
 
-  // const res2 = ethwallet.fromV3(keyStore);
+  //wallet
+  //2.wallet对象 + 密码 获取keysotre
+  const walletKeyStore = await wallet.toV3("111111");
+  // console.warn(walletKeyStore);
+  //从keyStore获取钱包
+  const walletFromKeyStore = await ethwallet.fromV3(walletKeyStore, "111111");
+  console.warn(walletFromKeyStore);
+  //钱包获取私钥
+  const key = walletFromKeyStore.getPrivateKey().toString("hex");
+  console.warn(key);
+
+  //复制私钥
+  const privateKeySame = Buffer(privateKey, "hex");
+  //私钥获取钱包
+  const walletSame = ethwallet.fromPrivateKey(privateKeySame);
+  //钱包获取地址
+  const lowerCaseAddressFromWalletSame = walletSame.getAddressString();
+  console.error(lowerCaseAddressFromWalletSame);
 };
 </script>

@@ -12,6 +12,7 @@
 
 <script setup>
 import { ref } from "vue";
+import  {Buffer} from "buffer";
 
 // 导入Web3
 import Web3 from "web3";

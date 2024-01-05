@@ -9,6 +9,10 @@ const routes = [
     path: "/account",
     component: () => import("@/views/AccountSystem.vue") 
   },
+  {
+    path: "/wallet",
+    component: () => import("@/views/Wallet.vue") 
+  },
 ];
 const router = createRouter({
   history: createWebHistory(),
