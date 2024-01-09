@@ -51,6 +51,9 @@ import { showNotify } from "vant";
 import { ref } from "vue";
 
 import * as bip39 from "bip39";
+import { hdkey } from "ethereumjs-wallet";
+
+import store2 from "store2";
 
 const showDialog = ref(false);
 const username = ref("");
@@ -61,7 +64,6 @@ const showMn = ref(false);
 const showConfirmMnDialog = ref(false);
 const saveMn = ref("");
 
-
 const createWallet = () => {
   showDialog.value = true;
 };
@@ -71,8 +73,14 @@ const confirmPassword = () => {
   if (password.value == "") {
     showNotify({ type: "danger", message: "请输入密码" });
   } else {
-    //创建助记词
-    mnemonic.value = bip39.generateMnemonic();
+    const walletInfo = store2.get("walletInfo");
+    if (walletInfo) {
+      mnemonic.value = walletInfo[0]["mnemonic"];
+    } else {
+      //创建助记词
+      mnemonic.value = bip39.generateMnemonic();
+    }
+
     showMn.value = true;
   }
 };
@@ -81,10 +89,41 @@ const confirmSaveMnemonic = () => {
   showConfirmMnDialog.value = true;
 };
 
+const confirmMn = async () => {
+  console.log(mnemonic.value);
+  console.log(saveMn.value);
+  showMn.value = false;
+  if (mnemonic.value == saveMn.value) {
+    //根据助记词创建种子
+    const seed = await bip39.mnemonicToSeed(mnemonic.value);
+    //根据种子创建钱包
+    const hdWallet = hdkey.fromMasterSeed(seed);
+    //根据钱包生成密钥对
+    const keyPair = hdWallet.derivePath("m/44'/60'/0'/0");
+    //密钥对获取钱包
+    const wallet = keyPair.getWallet();
 
-const confirmMn = () => {
-    console.log(mnemonic.value)
-    console.log(saveMn.value)
+    //地址
+    const lowerCaseAddress = wallet.getAddressString();
+    //校验地址
+    const checkSumAddress = wallet.getChecksumAddressString();
+    //私钥
+    const privateKey = wallet.getPrivateKey().toString("hex");
+    //keyStore
+    const keyStore = await wallet.toV3(password.value);
 
+    const walletInfo = [
+      {
+        id: 0,
+        address: lowerCaseAddress,
+        privateKey: privateKey,
+        keyStore: keyStore,
+        mnemonic: mnemonic.value,
+        balance: 0,
+      },
+    ];
+    store2("walletInfo", walletInfo);
+    console.log(walletInfo);
+  }
 };
 </script>
