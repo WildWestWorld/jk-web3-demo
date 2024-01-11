@@ -9,7 +9,7 @@
     <p>
       {{
         mnemonic ||
-        "target slush suspect faith route black cabbage document short mobile text lock"
+        "hospital uphold clerk tenant noble soap tide throw chef local off problem"
       }}
     </p>
   </template>
@@ -44,6 +44,21 @@
       ></van-field>
     </van-cell-group>
   </van-dialog>
+
+  <!-- accountList 账号列表 -->
+  <div>
+    <van-space direction="vertical">
+      <van-cell
+        :title="item.address"
+        icon="user-o"
+        v-for="item in walletInfoAddressFilter"
+      >
+        <template #right-icon>
+          <van-button size="small">{{ item.balance }}</van-button>
+        </template>
+      </van-cell>
+    </van-space>
+  </div>
 </template>
 
 <script setup>
@@ -54,6 +69,24 @@ import * as bip39 from "bip39";
 import { hdkey } from "ethereumjs-wallet";
 
 import store2 from "store2";
+import { onMounted } from "vue";
+import { computed } from "vue";
+
+import { Buffer } from "buffer";
+
+// 导入Web3
+import Web3 from "web3";
+//生成serializedTx 生成链上的Tx
+//Vite 需要安装依赖 //npm add node-stdlib-browser
+// npm add -D vite-plugin-node-stdlib-browser
+//   vite.config  配置nodePolyfills(),
+import Tx from "ethereumjs-tx";
+
+// Web3.givenProvider 默认是没有的
+let web3Ins = new Web3(
+  Web3.givenProvider ||
+    "wss://goerli.infura.io/ws/v3/c0b3b16253fb4528962978ae6b6ed58b"
+);
 
 const showDialog = ref(false);
 const username = ref("");
@@ -76,12 +109,16 @@ const confirmPassword = () => {
     const walletInfo = store2.get("walletInfo");
     if (walletInfo) {
       mnemonic.value = walletInfo[0]["mnemonic"];
+      confirmMn();
     } else {
       //创建助记词
       mnemonic.value = bip39.generateMnemonic();
-    }
 
-    showMn.value = true;
+      showMn.value = true;
+    }
+    // mnemonic.value = walletInfo
+    //   ? walletInfo[0]["mnemonic"]
+    //   : bip39.generateMnemonic();
   }
 };
 
@@ -93,37 +130,62 @@ const confirmMn = async () => {
   console.log(mnemonic.value);
   console.log(saveMn.value);
   showMn.value = false;
-  if (mnemonic.value == saveMn.value) {
-    //根据助记词创建种子
-    const seed = await bip39.mnemonicToSeed(mnemonic.value);
-    //根据种子创建钱包
-    const hdWallet = hdkey.fromMasterSeed(seed);
-    //根据钱包生成密钥对
-    const keyPair = hdWallet.derivePath("m/44'/60'/0'/0");
-    //密钥对获取钱包
-    const wallet = keyPair.getWallet();
+  const walletInfoSave = store2.get("walletInfo") || [];
 
-    //地址
-    const lowerCaseAddress = wallet.getAddressString();
-    //校验地址
-    const checkSumAddress = wallet.getChecksumAddressString();
-    //私钥
-    const privateKey = wallet.getPrivateKey().toString("hex");
-    //keyStore
-    const keyStore = await wallet.toV3(password.value);
-
-    const walletInfo = [
-      {
-        id: 0,
-        address: lowerCaseAddress,
-        privateKey: privateKey,
-        keyStore: keyStore,
-        mnemonic: mnemonic.value,
-        balance: 0,
-      },
-    ];
-    store2("walletInfo", walletInfo);
-    console.log(walletInfo);
+  if (mnemonic.value !== saveMn.value && walletInfoSave.length == 0) {
+    return;
   }
+
+  //地址索引
+  const addressIndex =
+    walletInfoSave.length == 0 ? 0 : walletInfoSave.length + 1;
+
+  //根据助记词创建种子
+  const seed = await bip39.mnemonicToSeed(mnemonic.value);
+  //根据种子创建钱包
+  const hdWallet = hdkey.fromMasterSeed(seed);
+  //根据钱包生成密钥对
+  const keyPair = hdWallet.derivePath(`m/44'/60'/0'/${addressIndex}`);
+  //密钥对获取钱包
+  const wallet = keyPair.getWallet();
+
+  //地址
+  const lowerCaseAddress = wallet.getAddressString();
+  //校验地址
+  const checkSumAddress = wallet.getChecksumAddressString();
+  //私钥
+  const privateKey = wallet.getPrivateKey().toString("hex");
+  //keyStore
+  const keyStore = await wallet.toV3(password.value);
+  const walletObj = {
+    id: addressIndex,
+    address: lowerCaseAddress,
+    privateKey: privateKey,
+    keyStore: keyStore,
+    mnemonic: mnemonic.value,
+    balance: 0,
+  };
+  walletInfoSave.push(walletObj);
+  store2("walletInfo", walletInfoSave);
+  console.log(walletInfoSave);
 };
+
+// 账号列表
+
+// 账号列表变量
+const walletInfoAccount = ref(store2.get("walletInfo") || []);
+
+const walletInfoAddressFilter = computed(() => {
+  walletInfoAccount.value.forEach(async (item) => {
+    let originalAddress = item.address;
+    //根据地址获取余额
+    item.balance = await web3Ins.eth.getBalance(originalAddress);
+    console.log(item.balance)
+  });
+  return walletInfoAccount.value;
+});
+
+onMounted(() => {
+  console.log(walletInfoAccount);
+});
 </script>
